@@ -20,19 +20,132 @@
   p, li { font-size: 16px; }
   ul { padding-left: 20px; }
   a { color: #0066cc; }
+
+  form { margin-top: 12px; }
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+  select, textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 16px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+    color: #1a1a1a;
+  }
+  textarea { resize: vertical; min-height: 120px; }
+  button {
+    margin-top: 24px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #0066cc;
+    color: #fff;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .form-status {
+    margin-top: 16px;
+    font-size: 14px;
+    display: none;
+  }
+  .form-status.success { color: #1a7f37; display: block; }
+  .form-status.error { color: #c0392b; display: block; }
+
   @media (prefers-color-scheme: dark) {
     body { background: #111; color: #eee; }
     .updated { color: #999; }
     a { color: #6db3ff; }
+    select, textarea { background: #1c1c1c; color: #eee; border-color: #444; }
+    button { background: #6db3ff; color: #111; }
+    .form-status.success { color: #4fd17a; }
+    .form-status.error { color: #ff6b5e; }
   }
 </style>
 </head>
 <body>
 
 <h1>Support</h1>
-<p class="updated">Effective / last updated: July 15, 2026</p>
+<p class="updated">Effective / last updated: July 16, 2026</p>
 
-<p>Pothos is a quote app for iPhone. If you need help, have feedback, or found a bug, please use the feedback form built into the App — open Pothos, go to Settings, and tap Feedback. That's the same channel described in our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms of Service</a>, and it's the fastest way to reach us.</p>
+<p>Pothos is a quote app for iPhone. If you need help, have feedback, or found a bug, use the form below or the feedback form built into the App — open Pothos, tap the profile icon in the Library tab to open Settings, then tap Send Feedback under Support. Both go to the same channel described in our <a href="/privacy/">Privacy Policy</a> and <a href="/terms/">Terms of Service</a>.</p>
+
+<h2>Contact us</h2>
+<form id="feedback-form">
+  <label for="category">Category</label>
+  <select id="category" name="category" required>
+    <option value="General">General</option>
+    <option value="Feature Request">Feature Request</option>
+    <option value="Content Request">Content Request</option>
+    <option value="Bug Report">Bug Report</option>
+  </select>
+
+  <label for="text">Message</label>
+  <textarea id="text" name="text" maxlength="2000" required placeholder="What's on your mind?"></textarea>
+
+  <button type="submit" id="submit-button">Send</button>
+  <p class="form-status" id="form-status" role="status"></p>
+</form>
+
+<script>
+  const FEEDBACK_ENDPOINT = "https://pothos-feedback-proxy.pothosapp.workers.dev";
+  const form = document.getElementById("feedback-form");
+  const status = document.getElementById("form-status");
+  const submitButton = document.getElementById("submit-button");
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const category = document.getElementById("category").value;
+    const text = document.getElementById("text").value.trim();
+
+    status.className = "form-status";
+    status.textContent = "";
+
+    if (!text) {
+      status.className = "form-status error";
+      status.textContent = "Please enter a message.";
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Sending…";
+
+    try {
+      const response = await fetch(FEEDBACK_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, text }),
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        status.className = "form-status success";
+        status.textContent = "Thanks — your message was sent.";
+        form.reset();
+      } else {
+        status.className = "form-status error";
+        status.textContent = "Something went wrong. Please try again.";
+      }
+    } catch {
+      status.className = "form-status error";
+      status.textContent = "Something went wrong. Please check your connection and try again.";
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "Send";
+    }
+  });
+</script>
 
 </body>
 </html>
